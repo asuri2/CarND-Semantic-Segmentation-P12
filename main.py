@@ -34,13 +34,13 @@ def load_vgg(sess, vgg_path):
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
 
-    tf.save_model.loder.load(sess, [vgg_tag], vgg_tag)
+    tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
     graph = tf.get_default_graph()
     input_image = graph.get_tensor_by_name(vgg_input_tensor_name)
     keep_prob = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
-    layer_3 = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
-    layer_4 = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
-    layer_7 = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    layer_3 = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    layer_4 = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    layer_7 = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
 
     return input_image, keep_prob, layer_3, layer_4, layer_7
 
@@ -89,8 +89,10 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
     # TODO: Implement function
-    logits = tf.reshape(input, (-1, num_classes))
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, correct_label))
+
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    correct_label=tf.reshape(correct_label,(-1,num_classes))
+    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label))
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     training_operation = optimizer.minimize(cross_entropy_loss)
     return logits, training_operation, cross_entropy_loss
@@ -153,7 +155,7 @@ def run():
         # TODO: Build NN using load_vgg, layers, and optimize function
         input_image, keep_prob, layer_3, layer_4, layer_7 = load_vgg(sess, vgg_path)
         output_layer = layers(layer_3, layer_4, layer_7, num_classes)
-        labels = tf.placeholder(tf.int, shape=[None, None, None, num_classes])
+        labels = tf.placeholder(tf.int32, shape=[None, None, None, num_classes])
         learning_rate = tf.placeholder(tf.float32)
         logits, training_operation, cross_entropy_loss = optimize(output_layer, labels, learning_rate, num_classes)
 
